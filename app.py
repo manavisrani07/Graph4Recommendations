@@ -75,7 +75,7 @@ def jaccard_similarity(list1, list2):
     union = set1.union(set2)
     return float(len(intersection)) / len(union)
 
-def get_recommendations(movie_title, movies_df, top_n=5):
+def get_recommendations(movie_title, movies_df, weights, top_n=5):
     # Create TF-IDF matrix
     vectorizer = TfidfVectorizer()
     tfidf_matrix = vectorizer.fit_transform(movies_df['processed_plot'])
@@ -98,20 +98,17 @@ def get_recommendations(movie_title, movies_df, top_n=5):
     movies_df['director_similarity'] = movies_df['directors'].apply(lambda x: jaccard_similarity(target_movie['directors'], x))
     movies_df['keyword_similarity'] = movies_df['keywords'].apply(lambda x: jaccard_similarity(target_movie['keywords'], x))
 
+    # Normalize weights to sum to 1
+    total_weight = sum(weights.values())
+    normalized_weights = {k: v / total_weight for k, v in weights.items()}
+
     # Compute overall similarity
-    weights = {
-        'plot_similarity': 0.4,
-        'genre_similarity': 0.2,
-        'actor_similarity': 0.2,
-        'director_similarity': 0.1,
-        'keyword_similarity': 0.1
-    }
     movies_df['overall_similarity'] = (
-        weights['plot_similarity'] * movies_df['plot_similarity'] +
-        weights['genre_similarity'] * movies_df['genre_similarity'] +
-        weights['actor_similarity'] * movies_df['actor_similarity'] +
-        weights['director_similarity'] * movies_df['director_similarity'] +
-        weights['keyword_similarity'] * movies_df['keyword_similarity']
+        normalized_weights['plot_similarity'] * movies_df['plot_similarity'] +
+        normalized_weights['genre_similarity'] * movies_df['genre_similarity'] +
+        normalized_weights['actor_similarity'] * movies_df['actor_similarity'] +
+        normalized_weights['director_similarity'] * movies_df['director_similarity'] +
+        normalized_weights['keyword_similarity'] * movies_df['keyword_similarity']
     )
 
     # Exclude the target movie
@@ -131,17 +128,44 @@ movies_df = fetch_data()
 
 movie_title = st.text_input("Enter a movie title to get recommendations:")
 
-if st.button("Get Recommendations"):
-    if movie_title:
-        with st.spinner('Calculating recommendations...'):
-            recommendations = get_recommendations(movie_title, movies_df, top_n=5)
-            if not recommendations.empty:
-                st.subheader(f"Top recommendations for '{movie_title}':")
-                st.table(recommendations)
-            else:
-                st.write("No recommendations found.")
-    else:
-        st.write("Please enter a movie title.")
+st.subheader("Adjust Similarity Weights (Total must be 100%)")
+
+plot_weight = st.slider("Plot Similarity Weight (%)", min_value=0, max_value=100, value=40)
+genre_weight = st.slider("Genre Similarity Weight (%)", min_value=0, max_value=100, value=20)
+actor_weight = st.slider("Actor Similarity Weight (%)", min_value=0, max_value=100, value=20)
+director_weight = st.slider("Director Similarity Weight (%)", min_value=0, max_value=100, value=10)
+keyword_weight = st.slider("Keyword Similarity Weight (%)", min_value=0, max_value=100, value=10)
+
+total_weight = plot_weight + genre_weight + actor_weight + director_weight + keyword_weight
+
+if total_weight != 100:
+    st.warning(f"The total weight is {total_weight}%. Please adjust the weights so they sum to 100%.")
+
+top_n = st.number_input("Number of recommendations to display:", min_value=1, max_value=20, value=5)
+
+if total_weight == 100:
+    if st.button("Get Recommendations"):
+        if movie_title:
+            with st.spinner('Calculating recommendations...'):
+                # Prepare the weights dictionary
+                weights = {
+                    'plot_similarity': plot_weight,
+                    'genre_similarity': genre_weight,
+                    'actor_similarity': actor_weight,
+                    'director_similarity': director_weight,
+                    'keyword_similarity': keyword_weight
+                }
+                recommendations = get_recommendations(movie_title, movies_df, weights, top_n=int(top_n))
+                if not recommendations.empty:
+                    st.subheader(f"Top {top_n} recommendations for '{movie_title}':")
+                    st.table(recommendations)
+                else:
+                    st.write("No recommendations found.")
+        else:
+            st.write("Please enter a movie title.")
+else:
+    st.write("Adjust the weights so they sum to 100% to get recommendations.")
 
 # Close the driver connection when the app is stopped
-driver.close()
+import atexit
+atexit.register(lambda: driver.close())
