@@ -16,9 +16,9 @@ nltk.download('stopwords')
 nltk.download('punkt')
 
 # Set up Neo4j connection using Streamlit secrets
-NEO4J_URI = st.secrets["NEO4J_URI"]
-NEO4J_USER = st.secrets["NEO4J_USER"]
-NEO4J_PASSWORD = st.secrets["NEO4J_PASSWORD"]
+NEO4J_URI = st.secrets["general"]["NEO4J_URI"]
+NEO4J_USER = st.secrets["general"]["NEO4J_USER"]
+NEO4J_PASSWORD = st.secrets["general"]["NEO4J_PASSWORD"]
 
 driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
 
