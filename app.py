@@ -98,8 +98,14 @@ def get_recommendations(movie_title, movies_df, weights, top_n=5):
     movies_df['director_similarity'] = movies_df['directors'].apply(lambda x: jaccard_similarity(target_movie['directors'], x))
     movies_df['keyword_similarity'] = movies_df['keywords'].apply(lambda x: jaccard_similarity(target_movie['keywords'], x))
 
-    # Normalize weights to sum to 1
+    # Compute total weight
     total_weight = sum(weights.values())
+
+    if total_weight == 0:
+        st.warning("All weights are zero. Please adjust the weights to get recommendations.")
+        return pd.DataFrame()
+
+    # Normalize weights to sum to 1
     normalized_weights = {k: v / total_weight for k, v in weights.items()}
 
     # Compute overall similarity
@@ -128,43 +134,35 @@ movies_df = fetch_data()
 
 movie_title = st.text_input("Enter a movie title to get recommendations:")
 
-st.subheader("Adjust Similarity Weights (Total must be 100%)")
+st.subheader("Adjust Similarity Weights (Set preferences for each component)")
 
-plot_weight = st.slider("Plot Similarity Weight (%)", min_value=0, max_value=100, value=40)
-genre_weight = st.slider("Genre Similarity Weight (%)", min_value=0, max_value=100, value=20)
-actor_weight = st.slider("Actor Similarity Weight (%)", min_value=0, max_value=100, value=20)
-director_weight = st.slider("Director Similarity Weight (%)", min_value=0, max_value=100, value=10)
-keyword_weight = st.slider("Keyword Similarity Weight (%)", min_value=0, max_value=100, value=10)
-
-total_weight = plot_weight + genre_weight + actor_weight + director_weight + keyword_weight
-
-if total_weight != 100:
-    st.warning(f"The total weight is {total_weight}%. Please adjust the weights so they sum to 100%.")
+plot_weight = st.slider("Plot Similarity Weight", min_value=0.0, max_value=100.0, value=40.0)
+genre_weight = st.slider("Genre Similarity Weight", min_value=0.0, max_value=100.0, value=20.0)
+actor_weight = st.slider("Actor Similarity Weight", min_value=0.0, max_value=100.0, value=20.0)
+director_weight = st.slider("Director Similarity Weight", min_value=0.0, max_value=100.0, value=10.0)
+keyword_weight = st.slider("Keyword Similarity Weight", min_value=0.0, max_value=100.0, value=10.0)
 
 top_n = st.number_input("Number of recommendations to display:", min_value=1, max_value=20, value=5)
 
-if total_weight == 100:
-    if st.button("Get Recommendations"):
-        if movie_title:
-            with st.spinner('Calculating recommendations...'):
-                # Prepare the weights dictionary
-                weights = {
-                    'plot_similarity': plot_weight,
-                    'genre_similarity': genre_weight,
-                    'actor_similarity': actor_weight,
-                    'director_similarity': director_weight,
-                    'keyword_similarity': keyword_weight
-                }
-                recommendations = get_recommendations(movie_title, movies_df, weights, top_n=int(top_n))
-                if not recommendations.empty:
-                    st.subheader(f"Top {top_n} recommendations for '{movie_title}':")
-                    st.table(recommendations)
-                else:
-                    st.write("No recommendations found.")
-        else:
-            st.write("Please enter a movie title.")
-else:
-    st.write("Adjust the weights so they sum to 100% to get recommendations.")
+if st.button("Get Recommendations"):
+    if movie_title:
+        with st.spinner('Calculating recommendations...'):
+            # Prepare the weights dictionary
+            weights = {
+                'plot_similarity': plot_weight,
+                'genre_similarity': genre_weight,
+                'actor_similarity': actor_weight,
+                'director_similarity': director_weight,
+                'keyword_similarity': keyword_weight
+            }
+            recommendations = get_recommendations(movie_title, movies_df, weights, top_n=int(top_n))
+            if not recommendations.empty:
+                st.subheader(f"Top {top_n} recommendations for '{movie_title}':")
+                st.table(recommendations)
+            else:
+                st.write("No recommendations found.")
+    else:
+        st.write("Please enter a movie title.")
 
 # Close the driver connection when the app is stopped
 import atexit
