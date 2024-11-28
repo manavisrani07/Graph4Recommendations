@@ -14,6 +14,7 @@ from nltk.tokenize import word_tokenize
 # Download NLTK data
 nltk.download('stopwords')
 nltk.download('punkt')
+nltk.download('punkt_tab')
 
 # Set up Neo4j connection using Streamlit secrets
 NEO4J_URI = st.secrets["general"]["NEO4J_URI"]
