@@ -1,2 +1,3 @@
 # Graph4Recommendations
-A graph based movie recommender app
+A graph db based movie recommender app.
+
