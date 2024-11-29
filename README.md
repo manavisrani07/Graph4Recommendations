@@ -1,6 +1,6 @@
 # 🎥 Graph-Based Movie Recommendation System
 
-![System Architecture](Graphdbmr.drawio.svg)
+![System Architecture](Graphdbmr.drawio.png)
 
 ## 📌 Introduction
 
